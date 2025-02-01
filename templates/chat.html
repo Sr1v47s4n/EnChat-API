@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EnChat - Secure Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .chat-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 20px;
+        margin: 5px 0;
+      }
+      .sent {
+        background-color: #3b82f6;
+        color: white;
+        align-self: flex-end;
+      }
+      .received {
+        background-color: #e5e7eb;
+        color: black;
+        align-self: flex-start;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="w-full max-w-lg bg-white shadow-lg rounded-lg p-4">
+      <div class="flex items-center mb-4 border-b pb-2">
+        <img
+          id="profile-pic"
+          class="w-10 h-10 rounded-full"
+          src="profile1.png"
+          alt="User"
+        />
+        <div class="ml-3">
+          <h2 id="chat-user" class="font-semibold">User Name</h2>
+          <p id="last-seen" class="text-xs text-gray-500">
+            Last seen: Just now
+          </p>
+        </div>
+      </div>
+
+      <div
+        id="chat-box"
+        class="h-80 overflow-y-auto flex flex-col space-y-2 p-2"
+      ></div>
+
+      <div class="flex items-center mt-2 border-t pt-2">
+        <input
+          id="message-input"
+          type="text"
+          placeholder="Type a message..."
+          class="flex-1 p-2 border rounded-lg focus:outline-none"
+        />
+        <button
+          id="send-btn"
+          class="ml-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const token =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM5MDI1MjAzLCJpYXQiOjE3Mzg0MjA0MDMsImp0aSI6IjBhMDBlYjg4OTJjMDQwMmM5MTliOGU0NzE2ZDk1YWMwIiwidXNlcl9pZCI6MX0.hbdJdqLUNrEumoey87x2MMcpHwWCMPLPHqTILdl8Dek";
+      const ws = new WebSocket("ws://127.0.0.1:8000/ws/chat/2/?token=" + token);
+      // Create WebSocket once
+
+      ws.onopen = function () {
+        console.log("WebSocket Connected!");
+      };
+
+      ws.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        const chatBox = document.getElementById("chat-box");
+
+        // Create message bubble
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add(
+          "chat-bubble",
+          data.sender === "me" ? "sent" : "received"
+        );
+        msgDiv.textContent = data.message;
+
+        // Append to chat window
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      };
+
+      // 🛠 Send message properly without reconnecting
+      document.getElementById("send-btn").onclick = function () {
+        const messageInput = document.getElementById("message-input");
+        const message = messageInput.value.trim();
+
+        if (message && ws.readyState === WebSocket.OPEN) {
+          ws.send(
+            JSON.stringify({ message: message, sender: "me", receiver: 2 })
+          );
+          messageInput.value = "";
+        } else {
+          console.log("WebSocket is not open. Reconnecting...");
+          reconnectWebSocket();
+        }
+      };
+
+      // 🔄 Reconnect WebSocket if it closes
+      function reconnectWebSocket() {
+        if (ws.readyState === WebSocket.CLOSED) {
+          console.log("Reconnecting WebSocket...");
+          ws = new WebSocket("ws://127.0.0.1:8000/ws/chat/2/");
+        }
+      }
+
+      ws.onclose = function (event) {
+        console.log("WebSocket Disconnected:", event);
+        setTimeout(reconnectWebSocket, 1000); // Auto-reconnect after 1 second
+      };
+    </script>
+  </body>
+</html>

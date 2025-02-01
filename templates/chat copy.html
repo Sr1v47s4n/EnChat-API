@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .chat-container { width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); overflow: hidden; }
+        .chat-header { background: #007bff; color: white; padding: 10px; text-align: center; font-size: 18px; }
+        .chat-box { height: 300px; overflow-y: auto; padding: 10px; }
+        .message { padding: 8px; margin: 5px; border-radius: 5px; max-width: 75%; }
+        .sent { background: #007bff; color: white; align-self: flex-end; }
+        .received { background: #e4e6eb; color: black; align-self: flex-start; }
+        .chat-input { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
+        .chat-input input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+        .chat-input button { padding: 8px 12px; background: #007bff; color: white; border: none; border-radius: 5px; margin-left: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Private Chat</div>
+        <div id="chatbox" class="chat-box"></div>
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Type a message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM5MDI1NTA1LCJpYXQiOjE3Mzg0MjA3MDUsImp0aSI6Ijc5NDYwODA5NDY3YjQ1NzViNGJjNGQ5NTQyYzM4ODRhIiwidXNlcl9pZCI6Mn0.VohmkISbaZ23aFddPI7d2xsKy29RGmPWf-IerZ8Me1Q";
+        const chatSocket = new WebSocket(`ws://127.0.0.1:8000/ws/chat/1/?token=${token}`);
+
+        chatSocket.onopen = function() {
+            chatSocket.send(JSON.stringify({ type: "request_old_messages" }));
+        };
+
+        chatSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === "old_messages") {
+                data.messages.forEach(msg => {
+                    displayMessage(msg.sender, msg.message, msg.sender === "You");
+                });
+            } else {
+                displayMessage(data.sender, data.message, data.sender === "You");
+            }
+        };
+
+        function sendMessage() {
+            const messageInput = document.getElementById("messageInput");
+            const message = messageInput.value;
+            chatSocket.send(JSON.stringify({ "message": message }));
+            displayMessage("You", message, true);
+            messageInput.value = "";
+        }
+
+        function displayMessage(sender, message, isSent = false) {
+            const chatbox = document.getElementById("chatbox");
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", isSent ? "sent" : "received");
+            messageDiv.innerText = `${sender}: ${message}`;
+            chatbox.appendChild(messageDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+    </script>
+</body>
+</html>
