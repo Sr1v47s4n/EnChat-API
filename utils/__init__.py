@@ -2,8 +2,11 @@ import base64
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from Crypto.Random import get_random_bytes
+from dotenv import load_dotenv
+import os
 
-KEY = b"TgRUDNSaa0sMPllMTKwEBA=="
+load_dotenv()
+KEY = os.getenv("AES_KEY")
 
 
 def encrypt_message(message):
@@ -27,6 +30,3 @@ def decrypt_message(encrypted_message):
             print(e)
             continue
     return decrypted.decode()
-
-
-

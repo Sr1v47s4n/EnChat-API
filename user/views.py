@@ -67,3 +67,16 @@ def user_login(request):
 def user_logout(request):
     logout(request)
     return Response({"message": "Logged out successfully"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def profile(request):
+    user = request.user
+    return Response(
+        {
+            "username": user.username,
+            "email": user.email,
+            "profile_picture": user.profile_picture,
+        }
+    )
